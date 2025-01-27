@@ -4,6 +4,71 @@ import locale
 locale.setlocale(locale.LC_ALL, "pt_BR.UTF-8")
 
 
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.next = None
+        self.previous = None
+
+
+class LinkedList:
+    def __init__(self):
+        self.head = None
+        self.tail = None
+
+    def append(self, data):
+        new_node = Node(data)
+
+        if not self.head:
+            self.head = self.tail = new_node
+        else:
+            self.tail.next = new_node
+            new_node.previous = self.tail
+            self.tail = new_node
+
+    def list(self):
+        current = self.head
+        while current:
+            yield current.data
+            current = current.next
+
+    def search(self, data, key=None):
+        current = self.head
+
+        while current:
+            if key and getattr(current.data, key) == data:
+                return current.data
+            elif current.data == data:
+                return current.data
+            current = current.next
+
+        return None
+
+    def remove(self, data):
+        current = self.head
+
+        while current:
+            if current.data == data:
+                if current == self.head and current == self.tail:
+                    self.head = self.tail = None
+                elif current == self.head:
+                    self.head = current.next
+                    if self.head:
+                        self.head.previous = None
+                elif current == self.tail:
+                    self.tail = current.previous
+                    if self.tail:
+                        self.tail.next = None
+                else:
+                    current.previous.next = current.next
+                    current.next.previous = current.previous
+                return True
+
+            current = current.next
+
+        return False
+
+
 class Product:
     def __init__(self, id, name, price, category):
         self.id = id
@@ -19,14 +84,22 @@ class User:
     def __init__(self, name, role):
         self.name = name
         self.role = role  # client | employee
-        self.cart = []
+        self.cart = LinkedList()
         self.actions = []
 
     def list_cart_products(self):
         print("\n🛒 Seu Carrinho")
 
-        for product in self.cart:
+        for product in self.cart.list():
             print(product)
+
+    def get_cart_total(self):
+        products = []
+
+        for product in self.cart.list():
+            products.append(product)
+
+        return sum(product.price for product in products)
 
     def register_action(self, action):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -42,51 +115,78 @@ class User:
 
 class PaperStore:
     def __init__(self):
-        self.products = [
+        self.products = LinkedList()
+        self.shopping_history = []
+
+        self.init_products()
+
+    def init_products(self):
+        initial_products = [
             Product(1, "Caneta Azul", 2.50, "Escrita"),
             Product(2, "Caderno 100 folhas", 10.00, "Cadernos"),
             Product(3, "Mochila Escolar", 120.00, "Mochilas"),
             Product(4, "Lápis de Cor", 15.00, "Arte"),
             Product(5, "Borracha", 1.50, "Escrita"),
         ]
-        self.shopping_list = []
+
+        for product in initial_products:
+            self.products.append(product)
 
     def list_products(self):
         print("\n📒 Lista de Produtos")
 
-        for product in self.products:
+        for product in self.products.list():
             print(product)
 
     def add_product(self, product):
-        if any(p.id == product.id for p in self.products):
-            print("Erro: Já existe um produto com esse ID!")
+        if self.products.search(product.id, key="id"):
+            print("\n❌ Erro: Já existe um produto com esse ID!")
         else:
             self.products.append(product)
-            print("Produto adicionado com sucesso!")
+            print("\nProduto adicionado com sucesso!")
 
     def edit_product(self, id, name=None, price=None, category=None):
-        for product in self.products:
-            if product.id == id:
-                if name:
-                    product.name = name
-                if price:
-                    product.price = price
-                if category:
-                    product.category = category
-                return product
+        product = self.products.search(id, key="id")
+
+        if product.id == id:
+            if name:
+                product.name = name
+            if price:
+                product.price = price
+            if category:
+                product.category = category
+
+            return product
 
         return None
 
     def remove_product(self, id):
-        self.products = [product for product in self.products if product.id != id]
+        product = self.products.search(id, key="id")
+
+        if product:
+            self.products.remove(product)
+            print(f"\nProduto {id} removido com sucesso!")
+        else:
+            print("\n❌ Erro: Produto não encontrado.")
 
     def list_categories(self):
-        return set(product.category for product in self.products)
+        categories = set()
+
+        for product in self.products.list():
+            categories.add(product.category)
+
+        return categories
 
     def recommend_products(self, category):
         print("\n⭐ Recomendações")
 
-        return [product for product in self.products if product.category == category]
+        recommendations = []
+
+        for product in self.products.list():
+            if product.category == category:
+                recommendations.append(product)
+
+        return recommendations
 
 
 def cliente_menu(store: PaperStore, user: User):
@@ -111,7 +211,7 @@ def cliente_menu(store: PaperStore, user: User):
             product_id = int(
                 input("\nDigite o ID do produto para adicionar ao carrinho: ")
             )
-            product = next((p for p in store.products if p.id == product_id), None)
+            product = store.products.search(product_id, key="id")
 
             if product:
                 user.cart.append(product)
@@ -123,8 +223,10 @@ def cliente_menu(store: PaperStore, user: User):
         elif choice == "3":
             user.register_action("Visualizou carrinho")
 
-            if not user.cart:
-                print("\nErro: Carrinho está vazio.")
+            total = user.get_cart_total()
+
+            if total == 0:
+                print("\n❌ Erro: Seu carrinho está vazio.")
             else:
                 user.list_cart_products()
 
@@ -132,7 +234,7 @@ def cliente_menu(store: PaperStore, user: User):
             product_id = int(
                 input("\nDigite o ID do produto para remover do carrinho: ")
             )
-            product = next((p for p in user.cart if p.id == product_id), None)
+            product = user.cart.search(product_id, key="id")
 
             if product:
                 user.cart.remove(product)
@@ -156,31 +258,30 @@ def cliente_menu(store: PaperStore, user: User):
                     print(product)
 
         elif choice == "6":
-            if not user.cart:
+            total = user.get_cart_total()
+
+            if total == 0:
                 print("\n❌ Erro: Seu carrinho está vazio!")
             else:
-                total = sum(product.price for product in user.cart)
+                print("🛍️ Produtos selecionados:")
+                user.list_cart_products()
 
-                print("Produtos selecionados:")
-                for item in user.cart:
-                    print(item)
-
-                print(f"O total do pedido é: R${total:.2f}")
+                print(f"O total do pedido é: {locale.currency(total, grouping=True)}")
                 user.register_action("Finalizou pedido")
 
         elif choice == "7":
-            if not user.cart:
+            total = user.get_cart_total()
+
+            if total == 0:
                 print("\n❌ Erro: Seu carrinho está vazio!")
             else:
-                print("Produtos do pedido:")
-                for item in user.cart:
-                    print(item)
+                print("📦 Produtos do pedido:")
+                user.list_cart_products()
 
-                total = sum(product.price for product in user.cart)
-                print(f"Valor total: R${total:.2f}")
+                print(f"Valor total: {locale.currency(total, grouping=True)}")
 
-                store.shopping_list.append(user.cart)
-                user.cart = []
+                store.shopping_history.append(user.cart)
+                user.cart = LinkedList()
 
                 user.register_action("Realizou pedido")
                 print("Você finalizou seu pedido!")
