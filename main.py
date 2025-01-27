@@ -1,81 +1,97 @@
 import datetime
+import locale
 
-class Produto:
-    def __init__(self, id, nome, preco, categoria):
+locale.setlocale(locale.LC_ALL, "pt_BR.UTF-8")
+
+
+class Product:
+    def __init__(self, id, name, price, category):
         self.id = id
-        self.nome = nome
-        self.preco = preco
-        self.categoria = categoria
+        self.name = name
+        self.price = price
+        self.category = category
 
     def __str__(self):
-        return f"{self.id} - {self.nome} ({self.categoria}) - R${self.preco:.2f}"
+        return f"#{self.id} - {self.name} ({self.category}) - {locale.currency(self.price, grouping=True)}"
 
 
-class Usuario:
-    def __init__(self, nome, tipo):
-        self.nome = nome
-        self.tipo = tipo  # cliente ou funcionario
-        self.carrinho = []
-        self.acoes = []
+class User:
+    def __init__(self, name, role):
+        self.name = name
+        self.role = role  # client | employee
+        self.cart = []
+        self.actions = []
 
-    def registrar_acao(self, acao):
+    def list_cart_products(self):
+        print("\n🛒 Seu Carrinho")
+
+        for product in self.cart:
+            print(product)
+
+    def register_action(self, action):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        if len(self.acoes) >= 5:
-            self.acoes.pop(0)
-        self.acoes.append(f"[{timestamp}] {acao}")
 
-    def visualizar_acao(self):
-        return self.acoes[::-1]
+        if len(self.actions) >= 5:
+            self.actions.pop(0)
+
+        self.actions.append(f"[{timestamp}] {action}")
+
+    def view_action(self):
+        return self.actions[::-1]
 
 
-class LojaPapelaria:
+class PaperStore:
     def __init__(self):
-        self.produtos = [
-            Produto(1, "Caneta Azul", 2.50, "Escrita"),
-            Produto(2, "Caderno 100 folhas", 10.00, "Cadernos"),
-            Produto(3, "Mochila Escolar", 120.00, "Mochilas"),
-            Produto(4, "Lápis de Cor", 15.00, "Arte"),
-            Produto(5, "Borracha", 1.50, "Escrita"),
+        self.products = [
+            Product(1, "Caneta Azul", 2.50, "Escrita"),
+            Product(2, "Caderno 100 folhas", 10.00, "Cadernos"),
+            Product(3, "Mochila Escolar", 120.00, "Mochilas"),
+            Product(4, "Lápis de Cor", 15.00, "Arte"),
+            Product(5, "Borracha", 1.50, "Escrita"),
         ]
-        self.fila_compras = []
+        self.shopping_list = []
 
-    def visualizar_produtos(self):
-        for produto in self.produtos:
-            print(produto)
+    def list_products(self):
+        print("\n📒 Lista de Produtos")
 
-    def adicionar_produto(self, produto):
-        if any(p.id == produto.id for p in self.produtos):
+        for product in self.products:
+            print(product)
+
+    def add_product(self, product):
+        if any(p.id == product.id for p in self.products):
             print("Erro: Já existe um produto com esse ID!")
         else:
-            self.produtos.append(produto)
+            self.products.append(product)
             print("Produto adicionado com sucesso!")
 
-    def editar_produto(self, id, nome=None, preco=None, categoria=None):
-        for produto in self.produtos:
-            if produto.id == id:
-                if nome:
-                    produto.nome = nome
-                if preco:
-                    produto.preco = preco
-                if categoria:
-                    produto.categoria = categoria
-                return produto
+    def edit_product(self, id, name=None, price=None, category=None):
+        for product in self.products:
+            if product.id == id:
+                if name:
+                    product.name = name
+                if price:
+                    product.price = price
+                if category:
+                    product.category = category
+                return product
+
         return None
 
-    def remover_produto(self, id):
-        self.produtos = [produto for produto in self.produtos if produto.id != id]
+    def remove_product(self, id):
+        self.products = [product for product in self.products if product.id != id]
 
-    def listar_categorias(self):
-        return set(produto.categoria for produto in self.produtos)
+    def list_categories(self):
+        return set(product.category for product in self.products)
 
-    def recomendar_produtos(self, categoria):
-        return [produto for produto in self.produtos if produto.categoria == categoria]
+    def recommend_products(self, category):
+        print("\n⭐ Recomendações")
+
+        return [product for product in self.products if product.category == category]
 
 
-# Funções para ações dos usuários
-def cliente_menu(loja, usuario):
+def cliente_menu(store: PaperStore, user: User):
     while True:
-        print(f"\nBem-vindo, cliente {usuario.nome}! Escolha uma opção:")
+        print(f"\nBem-vindo, cliente {user.name}! Escolha uma opção:")
         print("1. Visualizar produtos")
         print("2. Adicionar produto ao carrinho")
         print("3. Visualizar carrinho")
@@ -85,128 +101,145 @@ def cliente_menu(loja, usuario):
         print("7. Realizar pedido")
         print("8. Sair")
 
-        escolha = input("Digite sua escolha: ")
+        choice = input("Digite sua escolha: ")
 
-        if escolha == "1":
-            usuario.registrar_acao("Visualizou produtos")
-            loja.visualizar_produtos()
+        if choice == "1":
+            user.register_action("Visualizou produtos")
+            store.list_products()
 
-        elif escolha == "2":
-            id_produto = int(input("Digite o ID do produto para adicionar ao carrinho: "))
-            produto = next((p for p in loja.produtos if p.id == id_produto), None)
-            if produto:
-                usuario.carrinho.append(produto)
-                usuario.registrar_acao(f"Adicionou {produto.nome} ao carrinho")
-                print(f"{produto.nome} foi adicionado ao carrinho!")
+        elif choice == "2":
+            product_id = int(
+                input("\nDigite o ID do produto para adicionar ao carrinho: ")
+            )
+            product = next((p for p in store.products if p.id == product_id), None)
+
+            if product:
+                user.cart.append(product)
+                user.register_action(f"Adicionou {product.name} ao carrinho")
+                print(f"{product.name} foi adicionado ao carrinho!")
             else:
-                print("Produto não encontrado!")
+                print("❌ Produto não encontrado!")
 
-        elif escolha == "3":
-            usuario.registrar_acao("Visualizou carrinho")
-            if not usuario.carrinho:
-                print("Carrinho está vazio.")
-            else:
-                for item in usuario.carrinho:
-                    print(item)
+        elif choice == "3":
+            user.register_action("Visualizou carrinho")
 
-        elif escolha == "4":
-            id_produto = int(input("Digite o ID do produto para remover do carrinho: "))
-            produto = next((p for p in usuario.carrinho if p.id == id_produto), None)
-            if produto:
-                usuario.carrinho.remove(produto)
-                usuario.registrar_acao(f"Removeu {produto.nome} do carrinho")
-                print(f"{produto.nome} foi removido do carrinho!")
+            if not user.cart:
+                print("\nErro: Carrinho está vazio.")
             else:
-                print("Produto não encontrado no carrinho!")
+                user.list_cart_products()
 
-        elif escolha == "5":
-            categorias = loja.listar_categorias()
-            print("Categorias disponíveis:", ", ".join(categorias))
-            categoria = input("Digite a categoria que deseja explorar: ")
-            recomendacoes = loja.recomendar_produtos(categoria)
-            usuario.registrar_acao(f"Visualizou recomendações para {categoria}")
-            if not recomendacoes:
-                print("Nenhuma recomendação disponível.")
-            else:
-                for produto in recomendacoes:
-                    print(produto)
+        elif choice == "4":
+            product_id = int(
+                input("\nDigite o ID do produto para remover do carrinho: ")
+            )
+            product = next((p for p in user.cart if p.id == product_id), None)
 
-        elif escolha == "6":
-            if not usuario.carrinho:
-                print("Erro: Seu carrinho está vazio!")
+            if product:
+                user.cart.remove(product)
+                user.register_action(f"Removeu {product.name} do carrinho")
+                print(f"{product.name} foi removido do carrinho!")
             else:
-                total = sum(produto.preco for produto in usuario.carrinho)
+                print("❌ Erro: Produto não encontrado no carrinho!")
+
+        elif choice == "5":
+            categories = store.list_categories()
+            print("\nCategorias disponíveis:", ", ".join(categories))
+
+            category = input("Digite a categoria que deseja explorar: ")
+            recommendations = store.recommend_products(category)
+            user.register_action(f"Visualizou recomendações para {category}")
+
+            if not recommendations:
+                print("\n❌ Nenhuma recomendação disponível.")
+            else:
+                for product in recommendations:
+                    print(product)
+
+        elif choice == "6":
+            if not user.cart:
+                print("\n❌ Erro: Seu carrinho está vazio!")
+            else:
+                total = sum(product.price for product in user.cart)
+
                 print("Produtos selecionados:")
-                for item in usuario.carrinho:
+                for item in user.cart:
                     print(item)
-                print(f"O total do pedido é: R${total:.2f}")
-                usuario.registrar_acao("Finalizou pedido")
 
-        elif escolha == "7":
-            if not usuario.carrinho:
-                print("Erro: Seu carrinho está vazio!")
+                print(f"O total do pedido é: R${total:.2f}")
+                user.register_action("Finalizou pedido")
+
+        elif choice == "7":
+            if not user.cart:
+                print("\n❌ Erro: Seu carrinho está vazio!")
             else:
                 print("Produtos do pedido:")
-                for item in usuario.carrinho:
+                for item in user.cart:
                     print(item)
-                total = sum(produto.preco for produto in usuario.carrinho)
+
+                total = sum(product.price for product in user.cart)
                 print(f"Valor total: R${total:.2f}")
-                loja.fila_compras.append(usuario.carrinho)
-                usuario.carrinho = []
-                usuario.registrar_acao("Realizou pedido")
+
+                store.shopping_list.append(user.cart)
+                user.cart = []
+
+                user.register_action("Realizou pedido")
                 print("Você finalizou seu pedido!")
 
-        elif escolha == "8":
+        elif choice == "8":
             break
 
         else:
             print("Escolha inválida!")
 
 
-def funcionario_menu(loja, usuario):
+def employee_menu(store: PaperStore, user: User):
     while True:
-        print(f"\nBem-vindo, funcionário {usuario.nome}! Escolha uma opção:")
+        print(f"\nBem-vindo, funcionário {user.name}! Escolha uma opção:")
         print("1. Visualizar produtos")
         print("2. Adicionar produto")
         print("3. Editar produto")
         print("4. Remover produto")
         print("5. Sair")
 
-        escolha = input("Digite sua escolha: ")
+        choice = input("Digite sua escolha: ")
 
-        if escolha == "1":
-            usuario.registrar_acao("Visualizou produtos")
-            loja.visualizar_produtos()
+        if choice == "1":
+            user.register_action("Visualizou produtos")
+            store.list_products()
 
-        elif escolha == "2":
-            loja.visualizar_produtos()
+        elif choice == "2":
+            store.list_products()
+
             id = int(input("Digite o ID do novo produto: "))
-            nome = input("Digite o nome do produto: ")
-            preco = float(input("Digite o preço do produto: "))
-            categoria = input("Digite a categoria do produto: ")
-            loja.adicionar_produto(Produto(id, nome, preco, categoria))
-            usuario.registrar_acao(f"Adicionou o produto {nome}")
+            name = input("Digite o nome do produto: ")
+            price = float(input("Digite o preço do produto: "))
+            category = input("Digite a categoria do produto: ")
 
-        elif escolha == "3":
+            store.add_product(Product(id, name, price, category))
+            user.register_action(f"Adicionou o produto {name}")
+
+        elif choice == "3":
             id = int(input("Digite o ID do produto a ser editado: "))
-            nome = input("Novo nome (ou Enter para manter): ")
-            preco = input("Novo preço (ou Enter para manter): ")
-            categoria = input("Nova categoria (ou Enter para manter): ")
-            preco = float(preco) if preco else None
-            produto = loja.editar_produto(id, nome or None, preco, categoria or None)
-            if produto:
-                usuario.registrar_acao(f"Editou o produto {id}")
+            name = input("Novo nome (ou Enter para manter): ")
+            price = input("Novo preço (ou Enter para manter): ")
+            category = input("Nova categoria (ou Enter para manter): ")
+            price = float(price) if price else None
+            product = store.edit_product(id, name or None, price, category or None)
+
+            if product:
+                user.register_action(f"Editou o produto {id}")
                 print("Produto editado com sucesso!")
             else:
                 print("Produto não encontrado!")
 
-        elif escolha == "4":
+        elif choice == "4":
             id = int(input("Digite o ID do produto a ser removido: "))
-            loja.remover_produto(id)
-            usuario.registrar_acao(f"Removeu o produto {id}")
+            store.remove_product(id)
+
+            user.register_action(f"Removeu o produto {id}")
             print("Produto removido com sucesso!")
 
-        elif escolha == "5":
+        elif choice == "5":
             break
 
         else:
@@ -215,23 +248,32 @@ def funcionario_menu(loja, usuario):
 
 # Programa principal
 def main():
-    loja = LojaPapelaria()
+    store = PaperStore()
 
     while True:
         print("\nBem-vindo à Loja de Papelaria!")
-        nome = input("Digite seu nome: ")
-        tipo = input("Você é cliente ou funcionário? ").lower()
+        name = input("Digite seu nome: ")
+        choice_role = input(
+            "Você é cliente (c) ou funcionário (f)? (digite a inicial do seu cargo) "
+        ).lower()
 
-        if tipo not in ["cliente", "funcionario"]:
+        if choice_role not in ["c", "f"]:
             print("Tipo inválido. Tente novamente.")
             continue
 
-        usuario = Usuario(nome, tipo)
+        roles = {
+            "c": "client",
+            "f": "employee",
+        }
 
-        if tipo == "cliente":
-            cliente_menu(loja, usuario)
-        elif tipo == "funcionario":
-            funcionario_menu(loja, usuario)
+        role = roles[choice_role]
+
+        user = User(name, role)
+
+        if role == "client":
+            cliente_menu(store, user)
+        elif role == "employee":
+            employee_menu(store, user)
 
 
 if __name__ == "__main__":
