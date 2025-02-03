@@ -171,6 +171,91 @@ class Queue:
         return data
 
 
+class TreeNode:
+    def __init__(self, data):
+        self.data = data
+        self.left = None
+        self.right = None
+
+
+class BinaryTree:
+    def __init__(self):
+        self.root = None
+
+    def insert(self, data):
+        new_node = TreeNode(data)
+
+        if not self.root:
+            self.root = new_node
+        else:
+            current = self.root
+
+            while True:
+                if data < current.data:
+                    if not current.left:
+                        current.left = new_node
+                        break
+                    current = current.left
+                else:
+                    if not current.right:
+                        current.right = new_node
+                        break
+                    current = current.right
+
+    def search(self, data):
+        current = self.root
+
+        while current:
+            if current.data == data:
+                return current.data
+            elif data < current.data:
+                current = current.left
+            else:
+                current = current.right
+
+        return None
+
+    def list(self):
+        def traverse(node):
+            if node:
+                yield from traverse(node.left)
+                yield node.data
+                yield from traverse(node.right)
+
+        yield from traverse(self.root)
+
+    def remove(self, data):
+        def remove_node(node, data):
+            if not node:
+                return None
+
+            if data < node.data:
+                node.left = remove_node(node.left, data)
+            elif data > node.data:
+                node.right = remove_node(node.right, data)
+            else:
+                if not node.left:
+                    return node.right
+                elif not node.right:
+                    return node.left
+
+                temp = self.min_value_node(node.right)
+                node.data = temp.data
+                node.right = remove_node(node.right, temp.data)
+
+            return node
+
+        self.root = remove_node(self.root, data)
+
+    def min_value_node(self, node):
+        current = node
+
+        while current.left:
+            current = current.left
+
+        return current
+
+
 class Product:
     def __init__(self, id, name, price, category):
         self.id = id
@@ -230,6 +315,7 @@ class PaperStore:
     def __init__(self):
         self.products = LinkedList()
         self.shopping_history = Queue()
+        self.categories = BinaryTree()
 
         self.init_products()
 
@@ -245,6 +331,9 @@ class PaperStore:
         for product in initial_products:
             self.products.append(product)
 
+            if not self.categories.search(product.category):
+                self.categories.insert(product.category)
+
     def list_products(self):
         print("\n📒 Lista de Produtos")
 
@@ -256,6 +345,10 @@ class PaperStore:
             print("\n❌ Erro: Já existe um produto com esse ID!")
         else:
             self.products.append(product)
+
+            if not self.categories.search(product.category):
+                self.categories.insert(product.category)
+
             print("\nProduto adicionado com sucesso!")
 
     def edit_product(self, id, name=None, price=None, category=None):
@@ -267,7 +360,14 @@ class PaperStore:
             if price:
                 product.price = price
             if category:
+                last_category = product.category
                 product.category = category
+
+                if not self.categories.search(category):
+                    self.categories.insert(category)
+
+                if last_category:
+                    self.categories.remove(last_category)
 
             return product
 
@@ -278,17 +378,16 @@ class PaperStore:
 
         if product:
             self.products.remove(product)
+
+            if not any(product.category == p.category for p in self.products.list()):
+                self.categories.remove(product.category)
+
             print(f"\nProduto {id} removido com sucesso!")
         else:
             print("\n❌ Erro: Produto não encontrado.")
 
     def list_categories(self):
-        categories = set()
-
-        for product in self.products.list():
-            categories.add(product.category)
-
-        return categories
+        return list(self.categories.list())
 
     def recommend_products(self, category):
         print("\n⭐ Recomendações")
@@ -358,7 +457,10 @@ def cliente_menu(store: PaperStore, user: User):
 
         elif choice == "5":
             categories = store.list_categories()
-            print("\nCategorias disponíveis:", ", ".join(categories))
+            print("\nCategorias disponíveis:")
+
+            for category in categories:
+                print(f"- {category}")
 
             category = input("Digite a categoria que deseja explorar: ")
             recommendations = store.recommend_products(category)
