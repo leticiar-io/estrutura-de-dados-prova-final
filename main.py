@@ -71,30 +71,30 @@ class LinkedList:
 
 class Stack:
     def __init__(self):
-        self.head: Node | None = None
-        self.tail: Node | None = None
+        self.top: Node | None = None
+        self.bottom: Node | None = None
         self.size = 0
 
     def push(self, data):
         new_node = Node(data)
 
-        if not self.head:
-            self.head = self.tail = new_node
+        if not self.top:
+            self.top = self.bottom = new_node
         else:
-            self.tail.next = new_node
-            new_node.previous = self.tail
-            self.tail = new_node
+            self.bottom.next = new_node
+            new_node.previous = self.bottom
+            self.bottom = new_node
 
         self.size += 1
 
     def list(self):
-        current = self.head
+        current = self.top
         while current:
             yield current.data
             current = current.next
 
     def search(self, data):
-        current = self.head
+        current = self.top
 
         while current:
             if current.data == data:
@@ -104,16 +104,67 @@ class Stack:
         return None
 
     def pop(self):
-        if not self.head:
+        if not self.top:
             return None
 
-        data = self.tail.data
+        data = self.bottom.data
 
-        if self.head == self.tail:
-            self.head = self.tail = None
+        if self.top == self.bottom:
+            self.top = self.bottom = None
         else:
-            self.tail = self.tail.previous
-            self.tail.next = None
+            self.bottom = self.bottom.previous
+            self.bottom.next = None
+
+        self.size -= 1
+
+        return data
+
+
+class Queue:
+    def __init__(self):
+        self.front: Node | None = None
+        self.rear: Node | None = None
+        self.size = 0
+
+    def enqueue(self, data):
+        new_node = Node(data)
+
+        if not self.front:
+            self.front = self.rear = new_node
+        else:
+            self.rear.next = new_node
+            new_node.previous = self.rear
+            self.rear = new_node
+
+        self.size += 1
+
+    def list(self):
+        current = self.front
+        while current:
+            yield current.data
+            current = current.next
+
+    def search(self, data):
+        current = self.front
+
+        while current:
+            if current.data == data:
+                return current.data
+            current = current.next
+
+        return None
+
+    def dequeue(self):
+        if not self.front:
+            return None
+
+        data = self.front.data
+
+        if self.front == self.rear:
+            self.front = self.rear = None
+        else:
+            self.front = self.front.next
+            self.front.previous = None
 
         self.size -= 1
 
@@ -178,7 +229,7 @@ class User:
 class PaperStore:
     def __init__(self):
         self.products = LinkedList()
-        self.shopping_history = []
+        self.shopping_history = Queue()
 
         self.init_products()
 
@@ -342,7 +393,7 @@ def cliente_menu(store: PaperStore, user: User):
 
                 print(f"Valor total: {locale.currency(total, grouping=True)}")
 
-                store.shopping_history.append(user.cart)
+                store.shopping_history.enqueue(user.cart)
                 user.cart = LinkedList()
 
                 user.register_action("Realizou pedido")
