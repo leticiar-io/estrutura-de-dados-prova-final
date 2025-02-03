@@ -13,8 +13,8 @@ class Node:
 
 class LinkedList:
     def __init__(self):
-        self.head = None
-        self.tail = None
+        self.head: Node | None = None
+        self.tail: Node | None = None
 
     def append(self, data):
         new_node = Node(data)
@@ -69,6 +69,57 @@ class LinkedList:
         return False
 
 
+class Stack:
+    def __init__(self):
+        self.head: Node | None = None
+        self.tail: Node | None = None
+        self.size = 0
+
+    def push(self, data):
+        new_node = Node(data)
+
+        if not self.head:
+            self.head = self.tail = new_node
+        else:
+            self.tail.next = new_node
+            new_node.previous = self.tail
+            self.tail = new_node
+
+        self.size += 1
+
+    def list(self):
+        current = self.head
+        while current:
+            yield current.data
+            current = current.next
+
+    def search(self, data):
+        current = self.head
+
+        while current:
+            if current.data == data:
+                return current.data
+            current = current.next
+
+        return None
+
+    def pop(self):
+        if not self.head:
+            return None
+
+        data = self.tail.data
+
+        if self.head == self.tail:
+            self.head = self.tail = None
+        else:
+            self.tail = self.tail.previous
+            self.tail.next = None
+
+        self.size -= 1
+
+        return data
+
+
 class Product:
     def __init__(self, id, name, price, category):
         self.id = id
@@ -80,12 +131,21 @@ class Product:
         return f"#{self.id} - {self.name} ({self.category}) - {locale.currency(self.price, grouping=True)}"
 
 
+class Action:
+    def __init__(self, action, timestamp):
+        self.action = action
+        self.timestamp = timestamp
+
+    def __str__(self):
+        return f"[{self.timestamp}] {self.action}"
+
+
 class User:
     def __init__(self, name, role):
         self.name = name
         self.role = role  # client | employee
         self.cart = LinkedList()
-        self.actions = []
+        self.actions = Stack()
 
     def list_cart_products(self):
         print("\n🛒 Seu Carrinho")
@@ -104,13 +164,15 @@ class User:
     def register_action(self, action):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        if len(self.actions) >= 5:
-            self.actions.pop(0)
+        if self.actions.size >= 5:
+            self.actions.pop()
 
-        self.actions.append(f"[{timestamp}] {action}")
+        action = Action(action, timestamp)
 
-    def view_action(self):
-        return self.actions[::-1]
+        self.actions.push(action)
+
+    def list_actions(self):
+        return self.actions.list()
 
 
 class PaperStore:
