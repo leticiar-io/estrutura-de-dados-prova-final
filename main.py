@@ -171,36 +171,70 @@ class Queue:
         return data
 
 
-class TreeNode:
+class TreeNodeAVL:
     def __init__(self, data):
         self.data = data
         self.left = None
         self.right = None
+        self.height = 1
 
 
-class BinaryTree:
+class AVLTree:
     def __init__(self):
         self.root = None
 
     def insert(self, data):
-        new_node = TreeNode(data)
+        def _insert(node, data):
+            if not node:
+                return TreeNodeAVL(data)
+            if data < node.data:
+                node.left = _insert(node.left, data)
+            else:
+                node.right = _insert(node.right, data)
 
-        if not self.root:
-            self.root = new_node
-        else:
-            current = self.root
+            node.height = 1 + max(self._height(node.left), self._height(node.right))
+            balance = self._balance_factor(node)
 
-            while True:
-                if data < current.data:
-                    if not current.left:
-                        current.left = new_node
-                        break
-                    current = current.left
+            # Rotações
+            if balance > 1:
+                if data < node.left.data:
+                    return self._rotate_right(node)
                 else:
-                    if not current.right:
-                        current.right = new_node
-                        break
-                    current = current.right
+                    node.left = self._rotate_left(node.left)
+                    return self._rotate_right(node)
+            if balance < -1:
+                if data > node.right.data:
+                    return self._rotate_left(node)
+                else:
+                    node.right = self._rotate_right(node.right)
+                    return self._rotate_left(node)
+            return node
+
+        self.root = _insert(self.root, data)
+
+    def _height(self, node):
+        return node.height if node else 0
+
+    def _balance_factor(self, node):
+        return self._height(node.left) - self._height(node.right) if node else 0
+
+    def _rotate_left(self, z):
+        y = z.right
+        T2 = y.left
+        y.left = z
+        z.right = T2
+        z.height = 1 + max(self._height(z.left), self._height(z.right))
+        y.height = 1 + max(self._height(y.left), self._height(y.right))
+        return y
+
+    def _rotate_right(self, z):
+        y = z.left
+        T3 = y.right
+        y.right = z
+        z.left = T3
+        z.height = 1 + max(self._height(z.left), self._height(z.right))
+        y.height = 1 + max(self._height(y.left), self._height(y.right))
+        return y
 
     def search(self, data):
         current = self.root
@@ -215,44 +249,71 @@ class BinaryTree:
 
         return None
 
-    def list(self):
+    def pre_order(self):
+        def traverse(node):
+            if node:
+                yield node.data
+                yield from traverse(node.left)
+                yield from traverse(node.right)
+        yield from traverse(self.root)
+
+    def in_order(self):
         def traverse(node):
             if node:
                 yield from traverse(node.left)
                 yield node.data
                 yield from traverse(node.right)
+        yield from traverse(self.root)
 
+    def post_order(self):
+        def traverse(node):
+            if node:
+                yield from traverse(node.left)
+                yield from traverse(node.right)
+                yield node.data
         yield from traverse(self.root)
 
     def remove(self, data):
-        def remove_node(node, data):
+        def _remove(node, data):
             if not node:
                 return None
-
             if data < node.data:
-                node.left = remove_node(node.left, data)
+                node.left = _remove(node.left, data)
             elif data > node.data:
-                node.right = remove_node(node.right, data)
+                node.right = _remove(node.right, data)
             else:
                 if not node.left:
                     return node.right
                 elif not node.right:
                     return node.left
-
-                temp = self.min_value_node(node.right)
+                temp = self._min_value_node(node.right)
                 node.data = temp.data
-                node.right = remove_node(node.right, temp.data)
+                node.right = _remove(node.right, temp.data)
 
+            node.height = 1 + max(self._height(node.left), self._height(node.right))
+            balance = self._balance_factor(node)
+
+            # Rotações após remoção
+            if balance > 1:
+                if self._balance_factor(node.left) >= 0:
+                    return self._rotate_right(node)
+                else:
+                    node.left = self._rotate_left(node.left)
+                    return self._rotate_right(node)
+            if balance < -1:
+                if self._balance_factor(node.right) <= 0:
+                    return self._rotate_left(node)
+                else:
+                    node.right = self._rotate_right(node.right)
+                    return self._rotate_left(node)
             return node
 
-        self.root = remove_node(self.root, data)
+        self.root = _remove(self.root, data)
 
-    def min_value_node(self, node):
+    def _min_value_node(self, node):
         current = node
-
         while current.left:
             current = current.left
-
         return current
 
 
@@ -315,7 +376,7 @@ class PaperStore:
     def __init__(self):
         self.products = LinkedList()
         self.shopping_history = Queue()
-        self.categories = BinaryTree()
+        self.categories = AVLTree()
 
         self.init_products()
 
@@ -387,7 +448,7 @@ class PaperStore:
             print("\n❌ Erro: Produto não encontrado.")
 
     def list_categories(self):
-        return list(self.categories.list())
+        return list(self.categories.in_order())
 
     def recommend_products(self, category):
         print("\n⭐ Recomendações")
