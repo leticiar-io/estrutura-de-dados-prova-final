@@ -255,6 +255,7 @@ class AVLTree:
                 yield node.data
                 yield from traverse(node.left)
                 yield from traverse(node.right)
+
         yield from traverse(self.root)
 
     def in_order(self):
@@ -263,6 +264,7 @@ class AVLTree:
                 yield from traverse(node.left)
                 yield node.data
                 yield from traverse(node.right)
+
         yield from traverse(self.root)
 
     def post_order(self):
@@ -271,6 +273,7 @@ class AVLTree:
                 yield from traverse(node.left)
                 yield from traverse(node.right)
                 yield node.data
+
         yield from traverse(self.root)
 
     def remove(self, data):
